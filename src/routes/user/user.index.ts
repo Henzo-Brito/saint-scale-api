@@ -4,6 +4,8 @@ import * as route from "./user.route.js";
 
 const taskRoute = createRouter();
 
-taskRoute.openapi(route.createUser, handlers.createUser);
+taskRoute.openapi(route.createUser, handlers.createUserHandler);
+
+taskRoute.openapi(route.getUser, handlers.getUserHandler);
 
 export default taskRoute;

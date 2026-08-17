@@ -1,20 +1,19 @@
-import * as HttpStatusCode from "stoker/http-status-codes";
-import type { RouteHandling } from "@/tools/types.js";
+import type { RouteHandler } from "@hono/zod-openapi";
+import { createUser, getUser } from "./user.route.js";
+import { createUserDao, getUserDao } from "./user.dao.js";
 
-export const createUser: RouteHandling<CreatTaskType> = async (c) => {
-	const data = c.req.valid("json");
-	try {
-		const newTask = await createUser(data);
+export const createUserHandler: RouteHandler<typeof createUser> = async (c) => {
+    const data = c.req.valid('json');
+    
+    const newUser = createUserDao(data);
 
-		c.var.logger.info("Usuário Criado com sucesso");
+	console.log(newUser)
 
-		return c.json(newTask, HttpStatusCode.CREATED);
-	} catch (e) {
-		c.var.logger.error({ e }, "Erro ao criar usuário");
+    return c.json(newUser);
+};
 
-		return c.json(
-			{ message: "Internal Server Error" },
-			HttpStatusCode.INTERNAL_SERVER_ERROR,
-		);
-	}
+export const getUserHandler: RouteHandler<typeof getUser> = async (c) => {
+    const users = getUserDao();
+
+    return c.json(users);
 };
