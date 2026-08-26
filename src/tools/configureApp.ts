@@ -18,5 +18,5 @@ export function configureOpenApi(app: App) {
 		},
 	});
 
-    app.get('/scalar', Scalar({ url: '/doc' }))
+    app.get('/scalar', Scalar({ url: '/doc', darkMode: true, favicon: "🔥", theme: "kepler", layout: "classic" }))
 }
