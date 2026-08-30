@@ -12,14 +12,21 @@
     "@hono/standard-validator": "^0.4.0",
     "@hono/zod-openapi": "^1.6.0",
     "@scalar/hono-api-reference": "^0.11.14",
-    "SaintScale": ".",
+    "argon2": "^0.45.1",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
     "hono": "^4.13.2",
+    "jose": "^6.2.10",
+    "pg": "^8.23.0",
     "stoker": "^2.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",
+    "@types/bcrypt": "^6.0.0",
+    "@types/bun": "^1.4.0",
     "@types/node": "^26.1.1",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2"
   }

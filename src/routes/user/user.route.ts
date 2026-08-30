@@ -34,6 +34,13 @@ export const createUser = createRoute({
 export const getUser = createRoute({
 	method: "get",
 	path: "/",
+
+	security: [
+		{
+			bearerAuth: [],
+		},
+	],
+
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: {
@@ -44,5 +51,6 @@ export const getUser = createRoute({
 			description: "Gets all users successfully",
 		},
 	},
+
 	tags: ["User"],
 });
