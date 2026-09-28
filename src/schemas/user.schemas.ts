@@ -9,27 +9,27 @@ const birthDateSchema = z
 
 export const UserSchema = z
 	.object({
-		id_member: z.number().int(),
-		name: z.string().max(150).nullable(),
+		id_member:     z.number().int(),
+		name:          z.string().max(150),
 		register_date: z.string().datetime(),
-		birth_date: birthDateSchema,
-		telephone: z.string().max(11),
-		email: z.string().email().max(255),
-		password: z.string().min(8).max(255),
-		role: z.string().max(60),
-		id_function: z.number().int().nullable(),
+		birth_date:    birthDateSchema.nullable(),
+		telephone:     z.string().max(11).nullable(),
+		email:         z.string().email().max(255),
+		password:      z.string().min(8).max(255),
+		role:          z.string().max(60),
+		id_function:   z.number().int().nullable(),
 		id_logradouro: z.number().int().nullable(),
 	})
 	.openapi("User");
 
 export const CreateUserSchema = z
 	.object({
-		name: z.string().max(150),
+		name:      z.string().max(150),
 		birth_date: birthDateSchema,
 		telephone: z.string().max(11),
-		email: z.string().email().max(255),
-		password: z.string().min(8).max(60),
-		role: z.string().max(60),
+		email:     z.string().email().max(255),
+		password:  z.string().min(8).max(60),
+		role:      z.string().max(60),
 	})
 	.openapi("CreateUser");
 
