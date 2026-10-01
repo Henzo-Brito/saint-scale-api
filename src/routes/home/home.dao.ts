@@ -41,23 +41,23 @@ export const homeDao = {
 
     // ----------------------------------------------------------------
     // GET /home/unavailability/{mes}
-    // Retorna membros que estão em alguma escala do mês mas não confirmaram
+    // Retorna membros com disponibilidade != 'confirmado' no mês
     // ----------------------------------------------------------------
     async getUnavailability(mes: string) {
         const month = MONTH_MAP[mes];
         const result = await pool.query(
             `SELECT
-                e.id_escala::TEXT   AS id_escala,
-                m.nome              AS nome,
-                f.nome              AS funcao,
+                e.id_escala::TEXT      AS id_escala,
+                m.nome                 AS nome,
+                f.nome                 AS funcao,
                 COALESCE(m.img_id, '') AS img_id,
-                e.data_hora         AS dia
+                e.data_hora            AS dia
             FROM membros_escalas me
-            JOIN escalas  e ON e.id_escala  = me.id_escala_fk
-            JOIN membros  m ON m.id_membro  = me.id_membro_fk
+            JOIN escalas  e ON e.id_escala = me.id_escala_fk
+            JOIN membros  m ON m.id_membro = me.id_membro_fk
             LEFT JOIN funcoes f ON f.id_funcao = me.id_funcao_fk
             WHERE EXTRACT(MONTH FROM e.data_hora) = $1
-              AND me.confirmado = FALSE
+              AND me.disponibilidade <> 'confirmado'
             ORDER BY e.data_hora`,
             [month],
         );
@@ -76,17 +76,16 @@ export const homeDao = {
     // Retorna as escalas do membro autenticado com detalhes
     // ----------------------------------------------------------------
     async getScale(myId: number) {
-        // Busca escalas do membro
         const result = await pool.query(
             `SELECT
-                e.id_escala::TEXT                        AS id_escala,
-                e.nome_escala                            AS title_scale,
-                e.data_hora                              AS data_hora,
-                f.nome                                   AS funcao,
-                COUNT(CASE WHEN me2.confirmado THEN 1 END)::INT AS confirmados,
+                e.id_escala::TEXT AS id_escala,
+                e.nome_escala     AS title_scale,
+                e.data_hora       AS data_hora,
+                f.nome            AS funcao,
+                COUNT(CASE WHEN me2.disponibilidade = 'confirmado' THEN 1 END)::INT AS confirmados,
                 (SELECT COUNT(*) FROM musicas_escalas WHERE id_escala_fk = e.id_escala)::INT AS quant_music
             FROM membros_escalas me
-            JOIN escalas e  ON e.id_escala  = me.id_escala_fk
+            JOIN escalas e ON e.id_escala = me.id_escala_fk
             LEFT JOIN funcoes f ON f.id_funcao = me.id_funcao_fk
             LEFT JOIN membros_escalas me2 ON me2.id_escala_fk = e.id_escala
             WHERE me.id_membro_fk = $1
@@ -95,7 +94,6 @@ export const homeDao = {
             [myId],
         );
 
-        // Para cada escala, busca os img_ids dos membros confirmados
         const rows = await Promise.all(
             result.rows.map(async (r) => {
                 const imgs = await pool.query(
@@ -103,7 +101,7 @@ export const homeDao = {
                     FROM membros_escalas me
                     JOIN membros m ON m.id_membro = me.id_membro_fk
                     WHERE me.id_escala_fk = $1
-                      AND me.confirmado = TRUE`,
+                      AND me.disponibilidade = 'confirmado'`,
                     [r.id_escala],
                 );
 
@@ -124,17 +122,22 @@ export const homeDao = {
     },
 
     // ----------------------------------------------------------------
-    // GET /home/scale/day/{day}  — ex: day = "2026-11-14"
+    // GET /home/scale/day/{day}  — ex: day = "14112026" (DDMMYYYY)
     // Retorna todas as escalas de um dia específico
     // ----------------------------------------------------------------
     async getScaleDay(day: string) {
+        // Converte DDMMYYYY → YYYY-MM-DD
+        const dd   = day.slice(0, 2);
+        const mm   = day.slice(2, 4);
+        const yyyy = day.slice(4, 8);
+        const isoDay = `${yyyy}-${mm}-${dd}`;
         const result = await pool.query(
             `SELECT
-                e.id_escala::TEXT                        AS id_escala,
-                e.nome_escala                            AS nome_escala,
-                e.data_hora                              AS data_hora,
-                f.nome                                   AS funcao,
-                COUNT(CASE WHEN me.confirmado THEN 1 END)::INT AS confirmados,
+                e.id_escala::TEXT AS id_escala,
+                e.nome_escala     AS nome_escala,
+                e.data_hora       AS data_hora,
+                f.nome            AS funcao,
+                COUNT(CASE WHEN me.disponibilidade = 'confirmado' THEN 1 END)::INT AS confirmados,
                 (SELECT COUNT(*) FROM musicas_escalas WHERE id_escala_fk = e.id_escala)::INT AS quant_music
             FROM escalas e
             LEFT JOIN membros_escalas me ON me.id_escala_fk = e.id_escala
@@ -142,7 +145,7 @@ export const homeDao = {
             WHERE DATE(e.data_hora) = $1::DATE
             GROUP BY e.id_escala, e.nome_escala, e.data_hora, f.nome
             ORDER BY e.data_hora`,
-            [day],
+            [isoDay],
         );
 
         const rows = await Promise.all(
@@ -152,7 +155,7 @@ export const homeDao = {
                     FROM membros_escalas me
                     JOIN membros m ON m.id_membro = me.id_membro_fk
                     WHERE me.id_escala_fk = $1
-                      AND me.confirmado = TRUE`,
+                      AND me.disponibilidade = 'confirmado'`,
                     [r.id_escala],
                 );
 

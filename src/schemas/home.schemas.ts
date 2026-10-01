@@ -122,7 +122,9 @@ export const MyIdParamSchema = z.object({
 });
 
 export const DayParamSchema = z.object({
-    day: z.string(),
+    day: z.string()
+        .regex(/^\d{8}$/, "Day must be in DDMMYYYY format")
+        .openapi({ example: "14112026" }),
 });
 
 export const ReminderIdParamSchema = z.object({
