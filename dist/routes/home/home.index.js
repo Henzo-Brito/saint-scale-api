@@ -1,0 +1,11 @@
+import { authMiddleware } from "@/middlewares/auth.middleware.js";
+import { createRouter } from "@/tools/createAppRoute.js";
+import * as handlers from "./home.handler.js";
+import * as routes from "./home.route.js";
+const homeRoute = createRouter();
+homeRoute.use("*", authMiddleware);
+homeRoute.openapi(routes.getMonth, handlers.getMonthHandler);
+homeRoute.openapi(routes.getUnavailability, handlers.getUnavailabilityHandler);
+homeRoute.openapi(routes.getMyScales, handlers.getMyScalesHandler);
+homeRoute.openapi(routes.getScaleDay, handlers.getScaleDayHandler);
+export default homeRoute;

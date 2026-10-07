@@ -215,39 +215,112 @@ INSERT INTO equipes_membros (id_equipes_membros, id_membros_fk, id_equipes_fk) V
 ON CONFLICT (id_equipes_membros) DO NOTHING;
 
 INSERT INTO escalas (id_escala, nome_escala, data_hora, descricao) VALUES
-    (1, 'Mavi',          '2026-11-14 19:00:00', 'Culto de sexta'),
-    (2, 'Louvor Domingo','2026-11-16 09:00:00', 'Culto dominical')
+    (1, 'Mavi',                 '2026-11-14 19:00:00', 'Culto de sexta'),
+    (2, 'Louvor Domingo',       '2026-11-16 09:00:00', 'Culto dominical'),
+    (3, 'Louvor Sexta',         '2026-12-05 19:00:00', 'Culto de sexta - dezembro'),
+    (4, 'Louvor Domingo',       '2026-12-07 09:00:00', 'Culto dominical'),
+    (5, 'Ensaio Geral Natal',   '2026-12-13 10:00:00', 'Ensaio preparatório para o culto de natal'),
+    (6, 'Louvor Sexta',         '2026-12-19 19:00:00', 'Última sexta antes do natal'),
+    (7, 'Culto de Natal',       '2026-12-24 19:00:00', 'Culto especial de natal'),
+    (8, 'Louvor Domingo',       '2026-12-28 09:00:00', 'Último culto dominical do ano')
 ON CONFLICT (id_escala) DO NOTHING;
 
 INSERT INTO musicas (id_musica, nome, autor, tom, bpm, duracao) VALUES
-    (1, 'Oceans',                    'Hillsong',      'Re',  72, '05:30'),
-    (2, 'Nada Além',                 'Pregador Luo',  'La',  80, '04:15'),
-    (3, 'Quão Grande é o Meu Deus',  'Chris Tomlin',  'Sol', 76, '04:00')
+    (1, 'Oceans',                    'Hillsong',           'Re',   72, '05:30'),
+    (2, 'Nada Além',                 'Pregador Luo',       'La',   80, '04:15'),
+    (3, 'Quão Grande é o Meu Deus',  'Chris Tomlin',       'Sol',  76, '04:00'),
+    (4, 'Glorioso',                  'Ministério Zoe',     'Mi',   74, '05:10'),
+    (5, 'Bondade de Deus',           'Comunidade da Graça','Re',   68, '04:45'),
+    (6, 'Noite Feliz',               'Tradicional',        'Sol',  60, '03:00'),
+    (7, 'Alegria',                   'Diante do Trono',    'La',   88, '04:30'),
+    (8, 'Nenhum Outro Nome',         'Hillsong',           'Re',   78, '05:00')
 ON CONFLICT (id_musica) DO NOTHING;
 
-INSERT INTO musicas_escalas (id_escala_fk, id_musica_fk) VALUES
-    (1, 1), (1, 2), (1, 3),
-    (2, 1), (2, 3);
+INSERT INTO musicas_escalas (id_escala_fk, id_musica_fk, ordem) VALUES
+    -- Escala 1 (Nov 14)
+    (1, 1, 1), (1, 2, 2), (1, 3, 3),
+    -- Escala 2 (Nov 16)
+    (2, 1, 1), (2, 3, 2),
+    -- Escala 3 (Dez 05)
+    (3, 4, 1), (3, 5, 2), (3, 1, 3),
+    -- Escala 4 (Dez 07)
+    (4, 2, 1), (4, 7, 2), (4, 3, 3),
+    -- Escala 5 - Ensaio Natal (Dez 13)
+    (5, 6, 1), (5, 8, 2), (5, 4, 3), (5, 5, 4),
+    -- Escala 6 (Dez 19)
+    (6, 7, 1), (6, 4, 2), (6, 1, 3),
+    -- Escala 7 - Natal (Dez 24)
+    (7, 6, 1), (7, 8, 2), (7, 3, 3), (7, 5, 4),
+    -- Escala 8 (Dez 28)
+    (8, 2, 1), (8, 4, 2), (8, 7, 3);
 
 INSERT INTO membros_escalas (id_escala_fk, id_membro_fk, id_funcao_fk, disponibilidade) VALUES
+    -- Escala 1 (Nov 14)
     (1, 1, 1, 'confirmado'),
     (1, 2, 5, 'confirmado'),
     (1, 3, 2, 'pendente'),
+    -- Escala 2 (Nov 16)
     (2, 1, 1, 'confirmado'),
-    (2, 2, 5, 'pendente');
+    (2, 2, 5, 'pendente'),
+    -- Escala 3 (Dez 05) - Henzo escalado
+    (3, 4, 1, 'confirmado'),
+    (3, 1, 4, 'confirmado'),
+    (3, 2, 5, 'confirmado'),
+    (3, 3, 2, 'pendente'),
+    -- Escala 4 (Dez 07) - Henzo escalado
+    (4, 4, 1, 'pendente'),
+    (4, 2, 5, 'confirmado'),
+    (4, 1, 4, 'pendente'),
+    -- Escala 5 - Ensaio Natal (Dez 13) - Henzo escalado
+    (5, 4, 1, 'confirmado'),
+    (5, 1, 4, 'confirmado'),
+    (5, 2, 5, 'confirmado'),
+    (5, 3, 2, 'confirmado'),
+    -- Escala 6 (Dez 19) - Henzo indisponível
+    (6, 4, 1, 'indisponível'),
+    (6, 1, 1, 'confirmado'),
+    (6, 2, 5, 'confirmado'),
+    -- Escala 7 - Natal (Dez 24) - Henzo escalado
+    (7, 4, 1, 'confirmado'),
+    (7, 1, 4, 'confirmado'),
+    (7, 2, 5, 'confirmado'),
+    (7, 3, 2, 'pendente'),
+    -- Escala 8 (Dez 28)
+    (8, 1, 1, 'confirmado'),
+    (8, 2, 5, 'pendente'),
+    (8, 3, 3, 'pendente');
 
 INSERT INTO lembretes (id_lembrete, nome, data, tempo, descricao) VALUES
-    (1, 'ALERTA Ensaio Geral', '2026-12-02', '10:20', 'Ensaio antes do culto de natal. Levar instrumentos.'),
-    (2, 'Reunião de Líderes',  '2026-12-10', '19:00', 'Pauta: planejamento do próximo semestre.')
+    (1, 'ALERTA Ensaio Geral',      '2026-12-02', '10:20', 'Ensaio antes do culto de natal. Levar instrumentos.'),
+    (2, 'Reunião de Líderes',       '2026-12-10', '19:00', 'Pauta: planejamento do próximo semestre.'),
+    (3, 'Ensaio Extra Natal',       '2026-12-20', '15:00', 'Ensaio extra para o culto de natal. Presença obrigatória.'),
+    (4, 'Confraternização da Equipe','2026-12-22', '18:00', 'Confraternização de fim de ano da equipe de louvor.')
 ON CONFLICT (id_lembrete) DO NOTHING;
 
 INSERT INTO lembrete_funcoes (id_lembrete_fk, id_funcao_fk) VALUES
     (1, 1), (1, 2),
-    (2, 5);
+    (2, 5),
+    (3, 1), (3, 2), (3, 3), (3, 4), (3, 5),
+    (4, 1), (4, 2), (4, 3), (4, 4), (4, 5);
 
-INSERT INTO notificacoes (id_notificacao, id_membro_fk, titulo, data) VALUES
-    (1, 1, 'aewc',                 '2026-11-14'),
-    (2, 2, 'Confirmação pendente', '2026-11-16')
+INSERT INTO notificacoes (id_notificacao, id_membro_fk, titulo, conteudo, data) VALUES
+    (1, 4, 'Bem-vindo ao Saint Scale!',
+        'Olá, Henzo! Sua conta foi criada com sucesso. Você já está escalado para os cultos de dezembro.',
+        '2026-10-07'),
+    (2, 4, 'Você foi escalado: Louvor Sexta (05/12)',
+        'Você foi adicionado à escala do dia 05/12 às 19h. Confirme sua presença.',
+        '2026-11-25'),
+    (3, 4, 'Você foi escalado: Ensaio Geral Natal (13/12)',
+        'Ensaio preparatório para o culto de natal em 13/12 às 10h. Presença obrigatória.',
+        '2026-11-25'),
+    (4, 4, 'Você foi escalado: Culto de Natal (24/12)',
+        'Você está na escala do Culto de Natal em 24/12 às 19h. Que honra!',
+        '2026-11-26'),
+    (5, 4, 'Lembrete: Ensaio Extra Natal (20/12)',
+        'Não esqueça do ensaio extra em 20/12 às 15h. Leve seu instrumento.',
+        '2026-12-01'),
+    (6, 1, 'Confirmação pendente',  'Sua presença na escala de 07/12 ainda está pendente. Confirme!', '2026-11-28'),
+    (7, 2, 'Confirmação pendente',  'Sua presença na escala de 16/11 ainda está pendente.',           '2026-11-14')
 ON CONFLICT (id_notificacao) DO NOTHING;
 
 -- ============================================================
@@ -259,7 +332,6 @@ SELECT setval(pg_get_serial_sequence('equipes',          'id_equipes'),       (S
 SELECT setval(pg_get_serial_sequence('membros',          'id_membro'),        (SELECT MAX(id_membro)        FROM membros),         true);
 SELECT setval(pg_get_serial_sequence('membros_funcoes',  'id_membros_funcoes'),(SELECT MAX(id_membros_funcoes) FROM membros_funcoes),true);
 SELECT setval(pg_get_serial_sequence('equipes_membros',  'id_equipes_membros'),(SELECT MAX(id_equipes_membros) FROM equipes_membros),true);
-SELECT setval(pg_get_serial_sequence('membros',          'id_membro'),        (SELECT MAX(id_membro)        FROM membros),         true);
 SELECT setval(pg_get_serial_sequence('escalas',          'id_escala'),        (SELECT MAX(id_escala)        FROM escalas),         true);
 SELECT setval(pg_get_serial_sequence('musicas',          'id_musica'),        (SELECT MAX(id_musica)        FROM musicas),         true);
 SELECT setval(pg_get_serial_sequence('musicas_escalas',  'id_musica_escala'), (SELECT MAX(id_musica_escala) FROM musicas_escalas), true);
