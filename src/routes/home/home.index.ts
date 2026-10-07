@@ -8,9 +8,9 @@ const homeRoute = createRouter();
 
 homeRoute.use("*", authMiddleware);
 
-homeRoute.openapi(routes.getMonth,          handlers.getMonthHandler);
+homeRoute.openapi(routes.getMonth, handlers.getMonthHandler);
 homeRoute.openapi(routes.getUnavailability, handlers.getUnavailabilityHandler);
-homeRoute.openapi(routes.getScale,          handlers.getScaleHandler);
-homeRoute.openapi(routes.getScaleDay,       handlers.getScaleDayHandler);
+homeRoute.openapi(routes.getMyScales, handlers.getMyScalesHandler);
+homeRoute.openapi(routes.getScaleDay, handlers.getScaleDayHandler);
 
 export default homeRoute;

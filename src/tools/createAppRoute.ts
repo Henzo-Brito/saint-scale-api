@@ -1,33 +1,36 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { configureOpenApi } from "@/tools/configureApp.js";
-import { notFound, onError } from "stoker/middlewares";
 import { cors } from "hono/cors";
 import type { JWTPayload } from "jose";
+import { notFound, onError } from "stoker/middlewares";
+import { configureOpenApi } from "@/tools/configureApp.js";
 
 export type AppEnv = {
-    Variables: {
-        jwtPayload: JWTPayload;
-    };
+	Variables: {
+		jwtPayload: JWTPayload;
+	};
 };
 
 export function createApp() {
-    const app = new OpenAPIHono<AppEnv>();
+	const app = new OpenAPIHono<AppEnv>();
 
-    app.onError(onError);
-    app.notFound(notFound);
+	app.onError(onError);
+	app.notFound(notFound);
 
-    app.use(
-        "*",
-        cors({
-            origin: "http://localhost:8081",
-        }),
-    );
+	// CORS_ORIGIN em .env: "*" para dev/mobile, ou domínio específico para produção web.
+	// Apps React Native nativos não enviam Origin, então qualquer valor funciona para eles.
+	const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:8081";
+	app.use(
+		"*",
+		cors({
+			origin: corsOrigin,
+		}),
+	);
 
-    configureOpenApi(app);
+	configureOpenApi(app);
 
-    return app;
+	return app;
 }
 
 export function createRouter() {
-    return new OpenAPIHono<AppEnv>();
+	return new OpenAPIHono<AppEnv>();
 }

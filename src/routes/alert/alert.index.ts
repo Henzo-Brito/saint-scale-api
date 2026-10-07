@@ -8,7 +8,7 @@ const alertRoute = createRouter();
 
 alertRoute.use("*", authMiddleware);
 
-alertRoute.openapi(routes.getReminder,       handlers.getReminderHandler);
+alertRoute.openapi(routes.getReminder, handlers.getReminderHandler);
 alertRoute.openapi(routes.getReminderDetail, handlers.getReminderDetailHandler);
 
 export default alertRoute;

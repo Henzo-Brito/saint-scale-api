@@ -1,146 +1,102 @@
 import argon2 from "argon2";
-import type {
-	User,
-	CreateUser,
-	Me,
-	AlterEmail,
-	ForgotPassword,
-	AlterLogradouro,
-	AlterBirthday,
-	AlterTelephone,
-} from "@/schemas/user.schemas.js";
 import { pool } from "@/db/index.js";
+import type {
+	AlterBirthday,
+	AlterEmail,
+	AlterLogradouro,
+	AlterTelephone,
+	CreateUser,
+	ForgotPassword,
+	Me,
+	UserPublic,
+} from "@/schemas/user.schemas.js";
 
-// PostgreSQL returns DATE as a JS Date object; convert to MM-DD-YYYY string
+// Converte Date do PostgreSQL para YYYY-MM-DD (ISO, sem timezone shift).
 function formatBirthDate(raw: Date | string | null): string | null {
 	if (!raw) return null;
 	const d = raw instanceof Date ? raw : new Date(raw);
+	const year = d.getUTCFullYear();
 	const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-	const day   = String(d.getUTCDate()).padStart(2, "0");
-	const year  = d.getUTCFullYear();
-	return `${month}-${day}-${year}`;
+	const day = String(d.getUTCDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
 }
 
-function mapRow(row: Record<string, unknown>): User {
+function mapRow(row: Record<string, unknown>): UserPublic {
 	return {
-		...row,
-		birth_date:    formatBirthDate(row.birth_date as Date | string | null),
-		register_date: row.register_date instanceof Date
-			? row.register_date.toISOString()
-			: String(row.register_date),
-	} as User;
+		id_member: row.id_member as number,
+		name: row.name as string,
+		register_date:
+			row.register_date instanceof Date
+				? row.register_date.toISOString()
+				: String(row.register_date),
+		birth_date: formatBirthDate(row.birth_date as Date | string | null),
+		telephone: (row.telephone as string | null) ?? null,
+		email: row.email as string,
+		role: row.role as string,
+		id_logradouro: (row.id_logradouro as number | null) ?? null,
+	};
 }
 
 export const userDao = {
-	// ── GET ─────────────────────────────────────────────────────────
+	// ── POST / ───────────────────────────────────────────────────────
 
-	async createUser(user: CreateUser): Promise<User> {
-		// Input is MM-DD-YYYY; convert to ISO YYYY-MM-DD for PostgreSQL
-		const [month, day, year] = user.birth_date.split("-");
-		const birthDate = `${year}-${month}-${day}`;
-
+	async createUser(user: CreateUser): Promise<UserPublic> {
 		const hashedPassword = await argon2.hash(user.password, {
 			type: argon2.argon2id,
 		});
 
 		const result = await pool.query(
-			`
-			INSERT INTO membros (
-				nome,
-				data_nascimento,
-				telefone,
-				email,
-				senha,
-				cargo,
-				id_logradouro_fk
-			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
-			RETURNING
+			`INSERT INTO membros (nome, data_nascimento, telefone, email, senha, cargo)
+			 VALUES ($1, $2, $3, $4, $5, 'membro')
+			 RETURNING
 				id_membro        AS id_member,
 				nome             AS name,
 				data_registro    AS register_date,
 				data_nascimento  AS birth_date,
 				telefone         AS telephone,
 				email,
-				senha            AS password,
 				cargo            AS role,
-				NULL::INTEGER    AS id_function,
-				id_logradouro_fk AS id_logradouro
-			`,
-			[
-				user.name,
-				birthDate,
-				user.telephone,
-				user.email,
-				hashedPassword,
-				"membro",
-				null,
-			],
+				id_logradouro_fk AS id_logradouro`,
+			[user.name, user.birth_date, user.telephone, user.email, hashedPassword],
 		);
 
 		return mapRow(result.rows[0]);
 	},
 
-	async getUsers(): Promise<User[]> {
-		const result = await pool.query(`
-			SELECT
+	// ── GET / ────────────────────────────────────────────────────────
+
+	async getUsers(): Promise<UserPublic[]> {
+		const result = await pool.query(
+			`SELECT
 				id_membro        AS id_member,
 				nome             AS name,
 				data_registro    AS register_date,
 				data_nascimento  AS birth_date,
 				telefone         AS telephone,
 				email,
-				senha            AS password,
 				cargo            AS role,
-				NULL::INTEGER    AS id_function,
 				id_logradouro_fk AS id_logradouro
-			FROM membros
-		`);
+			FROM membros`,
+		);
 
 		return result.rows.map(mapRow);
-	},
-
-	async getUserByEmail(email: string): Promise<User | null> {
-		const result = await pool.query(
-			`
-			SELECT
-				id_membro        AS id_member,
-				nome             AS name,
-				data_registro    AS register_date,
-				data_nascimento  AS birth_date,
-				telefone         AS telephone,
-				email,
-				senha            AS password,
-				cargo            AS role,
-				NULL::INTEGER    AS id_function,
-				id_logradouro_fk AS id_logradouro
-			FROM membros
-			WHERE email = $1
-			LIMIT 1
-			`,
-			[email],
-		);
-
-		if (!result.rows[0]) return null;
-		return mapRow(result.rows[0]);
 	},
 
 	// ── GET /me ──────────────────────────────────────────────────────
 
 	async getMe(idMember: number): Promise<Me | null> {
-		// 1. Dados do membro + logradouro
 		const memberResult = await pool.query(
 			`SELECT
-				m.id_membro        AS id_membro,
-				m.nome             AS nome,
-				m.email            AS email,
-				m.img_id           AS img_id,
-				m.cargo            AS cargo,
-				m.data_nascimento  AS data_nascimento,
-				m.telefone         AS telefone,
-				m.data_registro    AS data_registro,
-				l.rua              AS rua,
-				l.numero           AS numero
+				m.id_membro       AS id_membro,
+				m.nome            AS nome,
+				m.email           AS email,
+				m.img_id          AS img_id,
+				m.cargo           AS cargo,
+				m.data_nascimento AS data_nascimento,
+				m.telefone        AS telefone,
+				m.data_registro   AS data_registro,
+				l.rua             AS rua,
+				l.numero          AS numero
 			FROM membros m
 			LEFT JOIN logradouros l ON l.id_logradouro = m.id_logradouro_fk
 			WHERE m.id_membro = $1
@@ -151,7 +107,6 @@ export const userDao = {
 		if (!memberResult.rows[0]) return null;
 		const m = memberResult.rows[0];
 
-		// 2. Funções do membro
 		const funcoesResult = await pool.query(
 			`SELECT f.nome
 			FROM membros_funcoes mf
@@ -160,12 +115,11 @@ export const userDao = {
 			[idMember],
 		);
 
-		// 3. Equipes + quantidade de participantes por equipe
 		const equipesResult = await pool.query(
 			`SELECT
-				e.img_id                              AS img_id,
-				e.title                               AS title,
-				COUNT(em2.id_membros_fk)::INT         AS quant_part
+				e.img_id                       AS img_id,
+				e.title                        AS title,
+				COUNT(em2.id_membros_fk)::INT  AS quant_part
 			FROM equipes_membros em1
 			JOIN equipes e ON e.id_equipes = em1.id_equipes_fk
 			LEFT JOIN equipes_membros em2 ON em2.id_equipes_fk = e.id_equipes
@@ -175,70 +129,99 @@ export const userDao = {
 		);
 
 		return {
-			id_membro:       m.id_membro,
-			nome:            m.nome,
-			email:           m.email,
-			img_id:          m.img_id ?? null,
-			cargo:           m.cargo,
-			funcoes:         funcoesResult.rows.map((r) => r.nome),
+			id_membro: m.id_membro,
+			nome: m.nome,
+			email: m.email,
+			img_id: m.img_id ?? null,
+			cargo: m.cargo,
+			funcoes: funcoesResult.rows.map((r) => r.nome),
 			data_nascimento: formatBirthDate(m.data_nascimento),
-			telefone:        m.telefone ?? null,
-			logradouro:      m.rua != null ? { rua: m.rua, numero: m.numero } : null,
-			equipes:         equipesResult.rows.map((r) => ({
-				img_id:     r.img_id ?? null,
-				title:      r.title,
+			telefone: m.telefone ?? null,
+			logradouro: m.rua != null ? { rua: m.rua, numero: m.numero } : null,
+			equipes: equipesResult.rows.map((r) => ({
+				img_id: r.img_id ?? null,
+				title: r.title,
 				quant_part: r.quant_part,
 			})),
-			data_registro: m.data_registro instanceof Date
-				? m.data_registro.toISOString()
-				: String(m.data_registro),
+			data_registro:
+				m.data_registro instanceof Date
+					? m.data_registro.toISOString()
+					: String(m.data_registro),
 		};
 	},
 
 	// ── PATCH ────────────────────────────────────────────────────────
 
-	async alterEmail(data: AlterEmail): Promise<boolean> {
+	async alterEmail(idMember: number, data: AlterEmail): Promise<boolean> {
 		const result = await pool.query(
 			`UPDATE membros SET email = $1 WHERE id_membro = $2`,
-			[data.email, data.id_member],
+			[data.email, idMember],
 		);
 		return (result.rowCount ?? 0) > 0;
 	},
 
+	// Público — identifica pelo email, não pelo JWT.
 	async forgotPassword(data: ForgotPassword): Promise<boolean> {
 		const hashedPassword = await argon2.hash(data.password, {
 			type: argon2.argon2id,
 		});
 		const result = await pool.query(
-			`UPDATE membros SET senha = $1 WHERE id_membro = $2`,
-			[hashedPassword, data.id_member],
+			`UPDATE membros SET senha = $1 WHERE email = $2`,
+			[hashedPassword, data.email],
 		);
 		return (result.rowCount ?? 0) > 0;
 	},
 
-	async alterLogradouro(data: AlterLogradouro): Promise<boolean> {
+	// Faz upsert do logradouro e atualiza a FK do membro.
+	async alterLogradouro(
+		idMember: number,
+		data: AlterLogradouro,
+	): Promise<boolean> {
+		// Reutiliza logradouro existente com mesma rua+numero, ou cria um novo.
+		const upsert = await pool.query(
+			`INSERT INTO logradouros (rua, numero)
+			 VALUES ($1, $2)
+			 ON CONFLICT (rua, numero) DO NOTHING
+			 RETURNING id_logradouro`,
+			[data.rua, data.numero],
+		);
+
+		let idLogradouro: number;
+		if (upsert.rows.length > 0) {
+			idLogradouro = upsert.rows[0].id_logradouro;
+		} else {
+			// Já existia — busca o id
+			const existing = await pool.query(
+				`SELECT id_logradouro FROM logradouros WHERE rua = $1 AND numero = $2 LIMIT 1`,
+				[data.rua, data.numero],
+			);
+			if (!existing.rows[0]) return false;
+			idLogradouro = existing.rows[0].id_logradouro;
+		}
+
 		const result = await pool.query(
 			`UPDATE membros SET id_logradouro_fk = $1 WHERE id_membro = $2`,
-			[data.id_logradouro, data.id_member],
+			[idLogradouro, idMember],
 		);
 		return (result.rowCount ?? 0) > 0;
 	},
 
-	async alterBirthday(data: AlterBirthday): Promise<boolean> {
-		// Input is MM-DD-YYYY; convert to ISO YYYY-MM-DD for PostgreSQL
-		const [month, day, year] = data.birth_date.split("-");
-		const birthDate = `${year}-${month}-${day}`;
+	async alterBirthday(idMember: number, data: AlterBirthday): Promise<boolean> {
+		// birth_date já vem em YYYY-MM-DD — PostgreSQL aceita diretamente.
 		const result = await pool.query(
 			`UPDATE membros SET data_nascimento = $1 WHERE id_membro = $2`,
-			[birthDate, data.id_member],
+			[data.birth_date, idMember],
 		);
 		return (result.rowCount ?? 0) > 0;
 	},
 
-	async alterTelephone(data: AlterTelephone): Promise<boolean> {
+	async alterTelephone(
+		idMember: number,
+		data: AlterTelephone,
+	): Promise<boolean> {
 		const result = await pool.query(
 			`UPDATE membros SET telefone = $1 WHERE id_membro = $2`,
-			[data.telephone, data.id_member],
+			[data.telephone, idMember],
 		);
 		return (result.rowCount ?? 0) > 0;
 	},

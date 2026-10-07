@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint --write ./src",
+    "format": "biome format --write ./src",
+    "migrate": "tsx src/db/migrate.ts",
     "start": "node dist/index.js"
   },
   "dependencies": {

@@ -1,5 +1,5 @@
-import { jwtVerify } from "jose";
 import type { Context, Next } from "hono";
+import { jwtVerify } from "jose";
 import "dotenv/config";
 
 const jwtSecret = process.env.JWT_SECRET;

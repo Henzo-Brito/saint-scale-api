@@ -2,24 +2,32 @@ import { createRoute, z } from "@hono/zod-openapi";
 import * as HttpStatusCode from "stoker/http-status-codes";
 
 import {
-	CreateUserSchema,
-	UserSchema,
-	MeSchema,
-	AlterEmailSchema,
-	ForgotPasswordSchema,
-	AlterLogradouroSchema,
 	AlterBirthdaySchema,
+	AlterEmailSchema,
+	AlterLogradouroSchema,
 	AlterTelephoneSchema,
+	CreateUserSchema,
+	ForgotPasswordSchema,
+	MeSchema,
 	PatchResponseSchema,
+	UserPublicSchema,
 } from "@/schemas/user.schemas.js";
 
 const SECURITY = [{ bearerAuth: [] }];
-const NOT_FOUND_RESPONSE = {
-	content: { "application/json": { schema: z.object({ message: z.string() }) } },
+const NOT_FOUND = {
+	content: {
+		"application/json": { schema: z.object({ message: z.string() }) },
+	},
 	description: "Membro não encontrado",
 } as const;
+const UNAUTHORIZED = {
+	content: {
+		"application/json": { schema: z.object({ message: z.string() }) },
+	},
+	description: "Token ausente ou inválido",
+} as const;
 
-// ── POST / ───────────────────────────────────────────────────────
+// ── POST / ─────────────────────────────────────────────────────
 
 export const createUser = createRoute({
 	method: "post",
@@ -27,35 +35,36 @@ export const createUser = createRoute({
 	tags: ["User"],
 	request: {
 		body: {
-			content: {
-				"application/json": { schema: CreateUserSchema },
-			},
+			content: { "application/json": { schema: CreateUserSchema } },
+			description:
+				"Dados do novo membro. birth_date em YYYY-MM-DD, telephone apenas dígitos (máx 11).",
 		},
 	},
 	responses: {
-		[HttpStatusCode.OK]: {
-			content: { "application/json": { schema: UserSchema } },
-			description: "Creates a new user successfully",
+		[HttpStatusCode.CREATED]: {
+			content: { "application/json": { schema: UserPublicSchema } },
+			description: "Membro criado. A senha nunca é retornada.",
 		},
 	},
 });
 
-// ── GET / ────────────────────────────────────────────────────────
+// ── GET / ───────────────────────────────────────────────────────
 
-export const getUser = createRoute({
+export const getUsers = createRoute({
 	method: "get",
 	path: "/",
 	tags: ["User"],
 	security: SECURITY,
 	responses: {
 		[HttpStatusCode.OK]: {
-			content: { "application/json": { schema: z.array(UserSchema) } },
-			description: "Gets all users successfully",
+			content: { "application/json": { schema: z.array(UserPublicSchema) } },
+			description: "Lista todos os membros. A senha nunca é retornada.",
 		},
+		[HttpStatusCode.UNAUTHORIZED]: UNAUTHORIZED,
 	},
 });
 
-// ── GET /me ──────────────────────────────────────────────────────
+// ── GET /me ─────────────────────────────────────────────────────
 
 export const getMe = createRoute({
 	method: "get",
@@ -65,16 +74,14 @@ export const getMe = createRoute({
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: { "application/json": { schema: MeSchema } },
-			description: "Retorna o perfil completo do membro autenticado",
+			description: "Perfil completo do membro autenticado (via JWT).",
 		},
-		[HttpStatusCode.NOT_FOUND]: {
-			content: { "application/json": { schema: z.object({ message: z.string() }) } },
-			description: "Membro não encontrado",
-		},
+		[HttpStatusCode.NOT_FOUND]: NOT_FOUND,
+		[HttpStatusCode.UNAUTHORIZED]: UNAUTHORIZED,
 	},
 });
 
-// ── PATCH /alterEmail ────────────────────────────────────────────
+// ── PATCH /alterEmail ───────────────────────────────────────────
 
 export const alterEmail = createRoute({
 	method: "patch",
@@ -82,45 +89,42 @@ export const alterEmail = createRoute({
 	tags: ["User"],
 	security: SECURITY,
 	request: {
-		body: {
-			content: {
-				"application/json": { schema: AlterEmailSchema },
-			},
-		},
+		body: { content: { "application/json": { schema: AlterEmailSchema } } },
 	},
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: { "application/json": { schema: PatchResponseSchema } },
-			description: "Altera o e-mail do membro",
+			description: "E-mail atualizado.",
 		},
-		[HttpStatusCode.NOT_FOUND]: NOT_FOUND_RESPONSE,
+		[HttpStatusCode.NOT_FOUND]: NOT_FOUND,
+		[HttpStatusCode.UNAUTHORIZED]: UNAUTHORIZED,
 	},
 });
 
-// ── PATCH /forgotPassword ────────────────────────────────────────
+// ── PATCH /forgotPassword ───────────────────────────────────────
+// Público: identifica o membro pelo email, não pelo JWT.
 
 export const forgotPassword = createRoute({
 	method: "patch",
 	path: "/forgotPassword",
 	tags: ["User"],
-	security: SECURITY,
 	request: {
 		body: {
-			content: {
-				"application/json": { schema: ForgotPasswordSchema },
-			},
+			content: { "application/json": { schema: ForgotPasswordSchema } },
+			description: "Email + nova senha. Não requer autenticação.",
 		},
 	},
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: { "application/json": { schema: PatchResponseSchema } },
-			description: "Altera a senha do membro",
+			description: "Senha atualizada.",
 		},
-		[HttpStatusCode.NOT_FOUND]: NOT_FOUND_RESPONSE,
+		[HttpStatusCode.NOT_FOUND]: NOT_FOUND,
 	},
 });
 
-// ── PATCH /alterLogradouro ───────────────────────────────────────
+// ── PATCH /alterLogradouro ──────────────────────────────────────
+// Recebe rua+numero; faz upsert internamente no backend.
 
 export const alterLogradouro = createRoute({
 	method: "patch",
@@ -129,21 +133,22 @@ export const alterLogradouro = createRoute({
 	security: SECURITY,
 	request: {
 		body: {
-			content: {
-				"application/json": { schema: AlterLogradouroSchema },
-			},
+			content: { "application/json": { schema: AlterLogradouroSchema } },
+			description:
+				"Rua e número do novo endereço. O backend cria ou reutiliza o logradouro.",
 		},
 	},
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: { "application/json": { schema: PatchResponseSchema } },
-			description: "Altera o logradouro do membro",
+			description: "Endereço atualizado.",
 		},
-		[HttpStatusCode.NOT_FOUND]: NOT_FOUND_RESPONSE,
+		[HttpStatusCode.NOT_FOUND]: NOT_FOUND,
+		[HttpStatusCode.UNAUTHORIZED]: UNAUTHORIZED,
 	},
 });
 
-// ── PATCH /alterBirthday ─────────────────────────────────────────
+// ── PATCH /alterBirthday ────────────────────────────────────────
 
 export const alterBirthday = createRoute({
 	method: "patch",
@@ -152,21 +157,21 @@ export const alterBirthday = createRoute({
 	security: SECURITY,
 	request: {
 		body: {
-			content: {
-				"application/json": { schema: AlterBirthdaySchema },
-			},
+			content: { "application/json": { schema: AlterBirthdaySchema } },
+			description: "Data de nascimento em YYYY-MM-DD.",
 		},
 	},
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: { "application/json": { schema: PatchResponseSchema } },
-			description: "Altera a data de nascimento do membro",
+			description: "Data de nascimento atualizada.",
 		},
-		[HttpStatusCode.NOT_FOUND]: NOT_FOUND_RESPONSE,
+		[HttpStatusCode.NOT_FOUND]: NOT_FOUND,
+		[HttpStatusCode.UNAUTHORIZED]: UNAUTHORIZED,
 	},
 });
 
-// ── PATCH /alterTelephone ────────────────────────────────────────
+// ── PATCH /alterTelephone ───────────────────────────────────────
 
 export const alterTelephone = createRoute({
 	method: "patch",
@@ -175,16 +180,16 @@ export const alterTelephone = createRoute({
 	security: SECURITY,
 	request: {
 		body: {
-			content: {
-				"application/json": { schema: AlterTelephoneSchema },
-			},
+			content: { "application/json": { schema: AlterTelephoneSchema } },
+			description: "Telefone com apenas dígitos, máx 11 chars.",
 		},
 	},
 	responses: {
 		[HttpStatusCode.OK]: {
 			content: { "application/json": { schema: PatchResponseSchema } },
-			description: "Altera o telefone do membro",
+			description: "Telefone atualizado.",
 		},
-		[HttpStatusCode.NOT_FOUND]: NOT_FOUND_RESPONSE,
+		[HttpStatusCode.NOT_FOUND]: NOT_FOUND,
+		[HttpStatusCode.UNAUTHORIZED]: UNAUTHORIZED,
 	},
 });

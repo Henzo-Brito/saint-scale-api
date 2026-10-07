@@ -6,24 +6,28 @@ import type { AppEnv } from "@/tools/createAppRoute.js";
 import { alertDao } from "./alert.dao.js";
 import type { getReminder, getReminderDetail } from "./alert.route.js";
 
-// ------------------------------------------------------------------
-// GET /alert/reminder
-// ------------------------------------------------------------------
-export const getReminderHandler: RouteHandler<typeof getReminder, AppEnv> = async (c) => {
-    const data = await alertDao.getReminder();
-    return c.json(data, HttpStatusCode.OK);
+export const getReminderHandler: RouteHandler<
+	typeof getReminder,
+	AppEnv
+> = async (c) => {
+	const payload = c.get("jwtPayload");
+	const idMembro = Number(payload.sub);
+	const data = await alertDao.getReminder(idMembro);
+	return c.json(data, HttpStatusCode.OK);
 };
 
-// ------------------------------------------------------------------
-// GET /alert/reminder/{id_reminder}
-// ------------------------------------------------------------------
-export const getReminderDetailHandler: RouteHandler<typeof getReminderDetail, AppEnv> = async (c) => {
-    const { id_reminder } = c.req.valid("param");
-    const data = await alertDao.getReminderDetail(Number(id_reminder));
+export const getReminderDetailHandler: RouteHandler<
+	typeof getReminderDetail,
+	AppEnv
+> = async (c) => {
+	const { id_reminder } = c.req.valid("param");
+	const data = await alertDao.getReminderDetail(Number(id_reminder));
 
-    if (!data) {
-        throw new HTTPException(HttpStatusCode.NOT_FOUND, { message: "Lembrete não encontrado" });
-    }
+	if (!data) {
+		throw new HTTPException(HttpStatusCode.NOT_FOUND, {
+			message: "Lembrete não encontrado",
+		});
+	}
 
-    return c.json(data, HttpStatusCode.OK);
+	return c.json(data, HttpStatusCode.OK);
 };
