@@ -262,26 +262,21 @@ INSERT INTO membros_escalas (id_escala_fk, id_membro_fk, id_funcao_fk, disponibi
     -- Escala 2 (Nov 16)
     (2, 1, 1, 'confirmado'),
     (2, 2, 5, 'pendente'),
-    -- Escala 3 (Dez 05) - Henzo escalado
-    (3, 4, 1, 'confirmado'),
+    -- Escala 3 (Dez 05)
     (3, 1, 4, 'confirmado'),
     (3, 2, 5, 'confirmado'),
     (3, 3, 2, 'pendente'),
-    -- Escala 4 (Dez 07) - Henzo escalado
-    (4, 4, 1, 'pendente'),
+    -- Escala 4 (Dez 07)
     (4, 2, 5, 'confirmado'),
     (4, 1, 4, 'pendente'),
-    -- Escala 5 - Ensaio Natal (Dez 13) - Henzo escalado
-    (5, 4, 1, 'confirmado'),
+    -- Escala 5 - Ensaio Natal (Dez 13)
     (5, 1, 4, 'confirmado'),
     (5, 2, 5, 'confirmado'),
     (5, 3, 2, 'confirmado'),
-    -- Escala 6 (Dez 19) - Henzo indisponível
-    (6, 4, 1, 'indisponível'),
+    -- Escala 6 (Dez 19)
     (6, 1, 1, 'confirmado'),
     (6, 2, 5, 'confirmado'),
-    -- Escala 7 - Natal (Dez 24) - Henzo escalado
-    (7, 4, 1, 'confirmado'),
+    -- Escala 7 - Natal (Dez 24)
     (7, 1, 4, 'confirmado'),
     (7, 2, 5, 'confirmado'),
     (7, 3, 2, 'pendente'),
@@ -304,23 +299,8 @@ INSERT INTO lembrete_funcoes (id_lembrete_fk, id_funcao_fk) VALUES
     (4, 1), (4, 2), (4, 3), (4, 4), (4, 5);
 
 INSERT INTO notificacoes (id_notificacao, id_membro_fk, titulo, conteudo, data) VALUES
-    (1, 4, 'Bem-vindo ao Saint Scale!',
-        'Olá, Henzo! Sua conta foi criada com sucesso. Você já está escalado para os cultos de dezembro.',
-        '2026-10-07'),
-    (2, 4, 'Você foi escalado: Louvor Sexta (05/12)',
-        'Você foi adicionado à escala do dia 05/12 às 19h. Confirme sua presença.',
-        '2026-11-25'),
-    (3, 4, 'Você foi escalado: Ensaio Geral Natal (13/12)',
-        'Ensaio preparatório para o culto de natal em 13/12 às 10h. Presença obrigatória.',
-        '2026-11-25'),
-    (4, 4, 'Você foi escalado: Culto de Natal (24/12)',
-        'Você está na escala do Culto de Natal em 24/12 às 19h. Que honra!',
-        '2026-11-26'),
-    (5, 4, 'Lembrete: Ensaio Extra Natal (20/12)',
-        'Não esqueça do ensaio extra em 20/12 às 15h. Leve seu instrumento.',
-        '2026-12-01'),
-    (6, 1, 'Confirmação pendente',  'Sua presença na escala de 07/12 ainda está pendente. Confirme!', '2026-11-28'),
-    (7, 2, 'Confirmação pendente',  'Sua presença na escala de 16/11 ainda está pendente.',           '2026-11-14')
+    (1, 1, 'Confirmação pendente', 'Sua presença na escala de 07/12 ainda está pendente. Confirme!', '2026-11-28'),
+    (2, 2, 'Confirmação pendente', 'Sua presença na escala de 16/11 ainda está pendente.',           '2026-11-14')
 ON CONFLICT (id_notificacao) DO NOTHING;
 
 -- ============================================================
